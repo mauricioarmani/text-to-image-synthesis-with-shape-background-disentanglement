@@ -1,0 +1,3 @@
+BIRDS_IMG_ROOT=../Data/birds/images
+BIRDS_CAPTION_ROOT=../Data/birds/cub_icml
+FASTTEXT_MODEL=wiki.en.bin

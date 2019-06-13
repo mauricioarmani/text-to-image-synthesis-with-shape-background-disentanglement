@@ -1,0 +1,15 @@
+data/   
+models/
+segmentation/__pycache__/
+preprocess/captions/wiki.en.vec
+preprocess/captions/wiki.en.bin
+preprocess/captions/wiki.en.zip
+evaluation/fid/__pycache__/
+evaluation/fid/fid_stats.npz
+evaluation/inception_score/__pycache__/
+evaluation/inception_score/inception_finetuned_models/
+evaluation/inception_score/inception/slim/__pycache__/
+gan/proj_utils/__pycache__/
+gan/__pycache__/
+sampling/local_files
+segmentation/checkpoints/checkpoint590.pt
