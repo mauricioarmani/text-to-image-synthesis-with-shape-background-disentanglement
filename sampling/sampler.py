@@ -110,7 +110,8 @@ if __name__ == '__main__':
     bsegs   = roll(segs, 2, dim=0).cuda()   # background segmentations
     segs    = roll(segs, 1, dim=0).cuda()   # for text mismatched segmentations
 
-    np_segs = to_numpy(segs)
+    # np to save
+    np_segs    = np.repeat(to_numpy(segs), 3, 1) * 2 - 1
     np_images  = to_numpy(images)
     np_bimages = to_numpy(bimages)
 
@@ -118,7 +119,7 @@ if __name__ == '__main__':
     vis_samples = [None for i in range(n_samples + 3)]
     vis_samples[0] = np_images
     vis_samples[1] = np_bimages
-    vis_samples[2] = np.repeat(np_segs, 3, 1) * 2 - 1
+    vis_samples[2] = np_segs
     
     for c in range(n_samples):
 
@@ -127,9 +128,9 @@ if __name__ == '__main__':
         
         *_, f_images, z_list= netG(txt_data, txt_len, segs_code, bkgs_code)
         
-        np_fake = to_numpy(f_images)
+        np_fakes = to_numpy(f_images)
 
-        vis_samples[c+3] = np_fake
+        vis_samples[c+3] = np_fakes
 
     # save noise tensors
     with open(os.path.join(sample_folder, z_file), 'bw') as f:
@@ -138,6 +139,16 @@ if __name__ == '__main__':
     # save images
     save_images(vis_samples, save=not sample_folder == '', save_path=os.path.join(
         sample_folder, png_file), dim_ordering='th')
+
+    # save images individualy
+    for i in range(batch_size):
+        np_image  = np.expand_dims(np_images[i], 0)
+        np_bimage = np.expand_dims(np_bimages[i], 0)
+        np_seg    = np.expand_dims(np_segs[i], 0)
+        np_fake   = np.expand_dims(np_fakes[i], 0)
+        sample = [np_image, np_bimage, np_seg, np_fake]
+        save_images(sample, save=not sample_folder == '', save_path=os.path.join(
+            sample_folder, '%d.png' % i), dim_ordering='th')
 
     # save captions
     with open(os.path.join(sample_folder, txt_file), 'w') as f:
