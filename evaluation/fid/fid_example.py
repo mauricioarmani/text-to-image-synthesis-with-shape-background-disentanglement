@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function
 import os
 import glob
-#os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import numpy as np
 import fid
 from scipy.misc import imread
@@ -17,7 +17,7 @@ FLAGS = tf.app.flags.FLAGS
 # Paths
 # image_path = '/home/mauricio/MyGan/Results/birds/GAN_64_birds_testing_num_10/GAN_64_birds_G_epoch_200.h5' # set path to some generated images
 image_path = os.path.join(FLAGS.image_folder, FLAGS.h5_file)
-stats_path = 'fid/fid_stats.npz' # training set statistics
+stats_path = 'evaluation/fid/fid_stats.npz' # training set statistics
 inception_path = fid.check_or_download_inception(None) # download inception network
 
 

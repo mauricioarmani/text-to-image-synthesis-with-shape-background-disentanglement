@@ -7,11 +7,10 @@ import re
 import scipy
 
 from .proj_utils.local_utils import mkdirs, imresize_shape
-from .proj_utils.torch_utils import to_torch, to_binary, to_numpy
+from .proj_utils.torch_utils import to_torch, to_binary, to_numpy, roll
 
 
-def test_gan(dataloader, save_root, model_folder, model_marker, netG, netE, args):
-    # test_sampler = dataset.next_batch_test
+def test_gan(dataloader, save_root, model_folder, model_marker, netG, netEs, netEb, args):
     highest_res  = 64
     
     save_folder  = os.path.join(save_root, model_marker) # to be defined in the later part
@@ -24,13 +23,16 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netE, args
     
     ''' load model '''
     assert args.load_from_epoch != '', 'args.load_from_epoch is empty'
-    G_weightspath = os.path.join(model_folder, 'G_epoch{}.pth'.format(args.load_from_epoch))
-    E_weightspath = os.path.join(model_folder, 'E_epoch{}.pth'.format(args.load_from_epoch))
+    G_weightspath  = os.path.join(model_folder, 'G_epoch{}.pth'.format(args.load_from_epoch))
+    Es_weightspath = os.path.join(model_folder, 'Es_epoch{}.pth'.format(args.load_from_epoch))
+    Eb_weightspath = os.path.join(model_folder, 'Eb_epoch{}.pth'.format(args.load_from_epoch))
     print('reload weights from {}'.format(G_weightspath))
-    print('reload weights from {}'.format(E_weightspath))
+    print('reload weights from {}'.format(Es_weightspath))
+    print('reload weights from {}'.format(Eb_weightspath))
 
     netG.load_state_dict(torch.load(G_weightspath))
-    netE.load_state_dict(torch.load(E_weightspath))
+    netEs.load_state_dict(torch.load(Es_weightspath))
+    netEb.load_state_dict(torch.load(Eb_weightspath))
 
     num_examples = len(dataloader.dataset)
     total_number = num_examples * args.test_sample_num
@@ -59,34 +61,42 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netE, args
         init_flag = True
 
         netG.eval()
-        netE.eval()
+        netEs.eval()
+        netEb.eval()
 
         for data in dataloader:
             test_images, _, segs, txt_data, txt_len, chosen_captions, saveIDs, classIDs = data
-            test_images = to_numpy(test_images)
 
-            this_batch_size =  test_images.shape[0]
+            np_test_images = to_numpy(test_images)
+
+            this_batch_size =  np_test_images.shape[0]
 
             all_choosen_caption.extend(chosen_captions)    
             if org_dset is not None:
-                org_dset[start_count:start_count+this_batch_size] = ((test_images + 1) * 127.5 ).astype(np.uint8)
+                org_dset[start_count:start_count+this_batch_size] = ((np_test_images + 1) * 127.5 ).astype(np.uint8)
                 org_emb_dset[start_count:start_count+this_batch_size] = test_embeddings_list[0]
 
             start_count += this_batch_size
             
             for t in range(args.test_sample_num):
                 
-                # segs = to_torch(np_segs).cuda()
                 segs = to_binary(segs).cuda()
+                test_images = test_images.cuda()
+                test_bimages = test_images
+
+                # mismatch
+                test_bimages = roll(test_images, 2, dim=0).cuda() # for text and seg mismatched backgrounds
+                segs = roll(segs, 1, dim=0).cuda() # for text mismatched segmentations
 
                 ''' Encode Segmentation'''
-                segs_code = netE(segs)
+                segs_code = netEs(segs)
+                bkgs_code = netEb(test_bimages)
 
                 txt_data = txt_data.cuda()
 
                 test_outputs = {}
-                # fake_images, *_ = netG(txt_data, txt_len, segs_code, random_seg_noise=args.random_seg_noise)
-                fake_images, *_ = netG(txt_data, txt_len, segs_code)
+                # _, _, _, fake_images, _ = netG(txt_data, txt_len, segs_code, random_seg_noise=args.random_seg_noise)
+                _, _, _, fake_images, _ = netG(txt_data, txt_len, segs_code, bkgs_code)
                 test_outputs['output_64'] = fake_images
 
                 if  t == 0: 
@@ -107,7 +117,7 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netE, args
                     cpu_data = img_val.cpu().data.numpy()
                     row, col = cpu_data.shape[2],cpu_data.shape[3] 
                     if t==0:
-                        this_reshape = imresize_shape(test_images,  (row, col)) 
+                        this_reshape = imresize_shape(np_test_images,  (row, col)) 
                         this_reshape = this_reshape * (2. / 255) - 1.
                         
                         # this_reshape = this_reshape.transpose(0, 3, 1, 2)
@@ -187,7 +197,7 @@ def save_super_images(vis_samples, captions_batch, batch_size, save_folder, save
             valid_IDS.append(saveIDs[j])
             valid_classIDS.append(classIDs[j])
 
-    for typ, img_list in vis_samples.items(): 
+    for typ, img_list in vis_samples.items():
         img_tensor = np.stack(img_list, 1) # N * T * 3 *row*col
         img_tensor = img_tensor.transpose(0,1,3,4,2)
         img_tensor = (img_tensor + 1.0) * 127.5

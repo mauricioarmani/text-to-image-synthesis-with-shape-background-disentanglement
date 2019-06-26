@@ -25,11 +25,11 @@ from PIL import Image
 
 if __name__ == '__main__':
 
-    # seed = 1231251
-    # torch.manual_seed(seed)
-    # torch.cuda.manual_seed(seed)
-    # np.random.seed(seed)
-    # random.seed(seed)
+    seed = 1231251
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
     parser = argparse.ArgumentParser(description='Gans')
 

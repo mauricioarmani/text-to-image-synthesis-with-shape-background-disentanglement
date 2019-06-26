@@ -1,5 +1,5 @@
-name='model1'
-CUDA_VISIBLE_DEVICES="1" python Gan/test_worker.py \
+name='model4_birds'
+CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
                                     --dataset birds \
                                     --model_name ${name} \
                                     --load_from_epoch 500 \

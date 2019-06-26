@@ -3,6 +3,8 @@ import os
 import sys
 import torch
 from torch.utils.data import DataLoader
+import numpy as np
+import random
 
 proj_root = '.'
 sys.path.insert(0, proj_root)
@@ -12,12 +14,18 @@ save_root  =  os.path.join(proj_root, 'results')
 
 from gan.data_loader import BirdsDataset
 from gan.networks import Generator
-from gan.networks import SegEncoder
+from gan.networks import ImgEncoder
 
 from gan.test import test_gan
 
 
 if  __name__ == '__main__':
+
+    seed = 354168
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
     parser = argparse.ArgumentParser(description = 'Gans')    
 
@@ -38,18 +46,20 @@ if  __name__ == '__main__':
     args = parser.parse_args()
     
     # NNs
-    netG = Generator(tcode_dim=512, scode_dim=1024, emb_dim=128, hid_dim=128)
-    netE = SegEncoder(num_chan=1, out_dim=1024)
+    netG  = Generator(tcode_dim=512, scode_dim=1024, emb_dim=128, hid_dim=128)
+    netEs = ImgEncoder(num_chan=1, out_dim=1024)
+    netEb = ImgEncoder(num_chan=3, out_dim=1024)
 
     netG.cuda()
-    netE.cuda()
+    netEs.cuda()
+    netEb.cuda()
 
     data_name = args.dataset
     datadir = os.path.join(data_root, data_name)
 
     print('> Loading test data ...')
     dataset    = BirdsDataset(datadir, mode='test')
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     # create results folder
     model_name = args.model_name  
@@ -58,4 +68,4 @@ if  __name__ == '__main__':
     # creade model folder
     model_marker = model_name + '_G_epoch_{}'.format(args.load_from_epoch)
 
-    test_gan(dataloader, save_root, model_folder, model_marker, netG, netE, args)
+    test_gan(dataloader, save_root, model_folder, model_marker, netG, netEs, netEb, args)

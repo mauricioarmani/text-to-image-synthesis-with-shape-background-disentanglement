@@ -74,17 +74,21 @@ class BirdsDataset(Dataset):
         return transform(image)
 
     def __getitem__(self, index):
-        w_index = np.random.randint(0,self.size)
+        w_index = np.random.randint(0, self.size)
 
         image   = self.images[index]
         seg     = self.segmentations[index]
         w_image = self.images[w_index, :, :, :]
 
-        seed = np.random.randint(2147483647)
+        if self.mode == 'test':
+            seed = 0
+        else:
+            seed = np.random.randint(2147483647)
+
         random.seed(seed)
         image = self.transforms(image)
         random.seed(seed)
-        seg   = self.transforms(seg)
+        seg = self.transforms(seg)
         w_image = self.transforms(w_image)
 
         image   = image * 2 - 1
@@ -92,7 +96,12 @@ class BirdsDataset(Dataset):
         w_image = w_image * 2 - 1
 
         filename = self.filenames[index]
-        randid = np.random.randint(0, 10) # choose instance caption
+
+        if self.mode == 'test':
+            randid = 0 # choose instance caption
+        else:
+            randid = np.random.randint(0, 10) # choose instance caption
+
         word_vec = self.caption_vecs[0][index][randid]
         len_desc = self.caption_vecs[1][index][randid]
         raw_captions = self.read_captions(filename, randid)
