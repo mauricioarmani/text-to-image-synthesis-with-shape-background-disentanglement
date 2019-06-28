@@ -4,6 +4,7 @@ import sys
 import torch
 import torch.optim as optim
 import torch.nn as nn
+import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 import time
 
@@ -11,13 +12,13 @@ from .proj_utils.torch_utils import set_lr, to_numpy, roll, to_binary
 
 
 def compute_g_loss(f_logit, f_logit_c, r_labels):
-    criterion  = nn.MSELoss()
+    criterion  = F.mse_loss
     r_g_loss   = criterion(f_logit, r_labels)
     f_g_loss_c = criterion(f_logit_c, r_labels)
     return r_g_loss + 10*f_g_loss_c
 
 def compute_d_loss(r_logit, r_logit_c, w_logit_c, f_logit, r_labels, f_labels):
-    criterion  = nn.MSELoss()
+    criterion  = F.mse_loss
     r_d_loss   = criterion(r_logit,   r_labels)
     r_d_loss_c = criterion(r_logit_c, r_labels)
     w_d_loss_c = criterion(w_logit_c, f_labels)
@@ -29,17 +30,24 @@ def get_kl_loss(mu, logvar):
     kl_loss = torch.mean(kld)
     return kl_loss
 
-def consistency_loss(f_seg, r_seg):
-    criterion   = nn.MSELoss()
-    consistency = criterion(f_seg, r_seg)
+def shape_consistency_loss(f_seg, r_seg):
+    consistency = F.mse_loss(f_seg, r_seg)
+    # criterion   = nn.L1Loss()
+    # consistency = criterion(f_seg, r_seg)
     return consistency
 
 def background_consistency_loss(f_bkgrds, bkgrds, f_segs, segs):
     crit_mask = ((f_segs < 1) & (segs < 1)).float().cuda()
-    criterion = nn.MSELoss(reduction='none')
-    mse = criterion(f_bkgrds, bkgrds)
-    mse_mean = (crit_mask * mse).mean()
-    return mse_mean
+    # crit_mask = ((f_segs or segs) < 1).float().cuda()
+    # criterion = nn.MSELoss(reduction='none')
+    l1 = F.l1_loss(f_bkgrds, bkgrds, reduction='none')
+    # mse = criterion(f_bkgrds, bkgrds)
+    l1_mean = (crit_mask * l1).mean()
+    return l1_mean
+
+def idt_consistency_loss(f_images, r_images):
+    criterion = F.l1_loss(f_images, r_images)
+    return consistency
 
 def train_gan(dataloader, model_folder, netG, netD, netS, netEs, netEb, args):
     """
@@ -121,20 +129,27 @@ def train_gan(dataloader, model_folder, netG, netD, netS, netEs, netEb, args):
 
             it = epoch*len(dataloader) + i
 
-            txt_data = txt_data.cuda()
+            # to cuda
             images   = images.cuda()
             w_images = w_images.cuda()
-
+            segs = segs.cuda()
+            txt_data = txt_data.cuda()
 
             ''' UPDATE D '''
             for p in netD.parameters(): p.requires_grad = True
             optimizerD.zero_grad()
 
-            bimages = roll(images, 2, dim=0).cuda() # for text and seg mismatched backgrounds
-            bsegs   = roll(segs, 2, dim=0).cuda()   # background segmentations
-
-            segs = roll(segs, 1, dim=0).cuda() # for text mismatched segmentations
-            segs_code = netEs(segs)    # segmentation encoding
+            if args.manipulate:
+                bimages = images # for text and seg mismatched backgrounds
+                bsegs   = segs   # background segmentations
+            else:
+                bimages = roll(images, 2, dim=0) # for text and seg mismatched backgrounds
+                simages = roll(images, 1, dim=0) ################# SEM SHAPE #######################
+                bsegs   = roll(segs, 2, dim=0)   # background segmentations
+                segs    = roll(segs, 1, dim=0)   # for text mismatched segmentations
+    
+            # segs_code = netEs(segs)    # segmentation encoding
+            segs_code = netEs(simages)    # segmentation encoding ################# SEM SHAPE #######################
             bkgs_code = netEb(bimages) # background image encoding
             
             mean_var, smean_var, bmean_var, f_images, _ = netG(txt_data, txt_len, segs_code, bkgs_code)
@@ -164,7 +179,7 @@ def train_gan(dataloader, model_folder, netG, netD, netS, netEs, netEb, args):
             g_adv_loss = compute_g_loss(f_logit, f_logit_c, r_labels)
             
             f_segs = netS(f_images) # segmentation from Unet
-            seg_consist_loss = consistency_loss(f_segs, segs)
+            seg_consist_loss = shape_consistency_loss(f_segs, segs)
 
             bkg_consist_loss = background_consistency_loss(f_images, bimages, f_segs, bsegs)
 
@@ -172,12 +187,18 @@ def train_gan(dataloader, model_folder, netG, netD, netS, netEs, netEb, args):
             skl_loss = get_kl_loss(smean_var[0], smean_var[1]) # segmentation
             bkl_loss = get_kl_loss(bmean_var[0], bmean_var[1]) # background
 
+            if args.manipulate:
+                idt_loss = idt_consistency_loss(f_images, images)
+            else:
+                idt_loss = 0.
+
             g_loss = g_adv_loss \
                     + args.KL_COE * kl_loss \
                     + args.KL_COE * skl_loss \
                     + args.KL_COE * bkl_loss \
                     + 10*seg_consist_loss \
-                    + 50*bkg_consist_loss
+                    + 10*bkg_consist_loss \
+                    + 10*idt_loss
 
             g_loss.backward()
             optimizerG.step()

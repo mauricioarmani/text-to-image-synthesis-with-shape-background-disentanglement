@@ -5,7 +5,7 @@ import numpy as np
 def load_data_from_h5(fullpath, h5_file):
     
     h5file = os.path.join(fullpath, h5_file)
-    return_path = os.path.join(fullpath, h5_file[: - 3] + '_inception_score')
+    return_path = os.path.join(fullpath, h5_file[: - 3] + '_IS')
     print ('read h5 from {}'.format(h5file))
     assert(os.path.isfile(h5file))
     fh = h5py.File(h5file, 'r')

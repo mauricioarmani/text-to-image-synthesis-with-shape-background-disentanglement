@@ -52,6 +52,8 @@ if __name__ == '__main__':
                         help='Number of images to plot on tensorboard')
     parser.add_argument('--scode_dim', type=int, default=1024,
                         help='Segmentation code dimention')
+    parser.add_argument('--manipulate',   action='store_true',
+                        default=False, help='Framework for image manipulation.')
 
     args = parser.parse_args()
 
@@ -59,7 +61,8 @@ if __name__ == '__main__':
     netG   = Generator(tcode_dim=512, scode_dim=args.scode_dim, emb_dim=args.emb_dim, hid_dim=128)
     netD   = Discriminator()
     netS   = Unet()
-    netEs  = ImgEncoder(num_chan=1, out_dim=args.scode_dim)
+    # netEs  = ImgEncoder(num_chan=1, out_dim=args.scode_dim)
+    netEs  = ImgEncoder(num_chan=3, out_dim=args.scode_dim) ######################## SEM SHAPE ##################
     netEb  = ImgEncoder(num_chan=3, out_dim=args.scode_dim)
 
     netD  = netD.cuda()
@@ -83,5 +86,5 @@ if __name__ == '__main__':
     print('> Model folder: %s' % model_folder)
 
     print('> Start training ...')
-    print('>> Run tensorboard --logdir Models/')
+    print('>> Run tensorboard --logdir models/')
     train_gan(dataloader, model_folder, netG, netD, netS, netEs, netEb, args)

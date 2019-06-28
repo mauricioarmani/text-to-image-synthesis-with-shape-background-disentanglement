@@ -48,13 +48,13 @@ if __name__ == '__main__':
     mv_idb = args.mv_idb
 
     if not fx1_id:
-        fx1_id = np.random.randint(0,100)
+        fx1_id = np.random.randint(0,160)
     if not fx2_id:
-        fx2_id = np.random.randint(0,100)
+        fx2_id = np.random.randint(0,160)
     if not mv_ida:
-        mv_ida = np.random.randint(0,100)
+        mv_ida = np.random.randint(0,160)
     if not mv_idb:
-        mv_idb = np.random.randint(0,100)
+        mv_idb = np.random.randint(0,160)
 
     # set file name
     file = 'epoch_%d' % epoch

@@ -8,7 +8,7 @@ import fid
 from scipy.misc import imread
 import tensorflow as tf
 import h5py
-
+import json
 
 tf.app.flags.DEFINE_string('image_folder','',"""Path where to load the images """)
 tf.app.flags.DEFINE_string('h5_file','',"""Path where to load the images """)
@@ -41,3 +41,6 @@ with tf.Session() as sess:
 fid_value = fid.calculate_frechet_distance(mu_gen, sigma_gen, mu_real, sigma_real)
 print('Image path:', image_path)
 print("FID: %s" % fid_value)
+
+json_path = os.path.join(FLAGS.image_folder ,FLAGS.h5_file[:-3] + '_FID.json')
+json.dump({'FID': fid_value}, open(json_path,'w'), indent=True)

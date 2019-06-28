@@ -24,7 +24,7 @@ def to_numpy(src):
     return x.detach().cpu().numpy()
 
 def to_binary(tensor):
-    tensor = (tensor >= 0.5).float().cuda()
+    tensor = (tensor >= 0.5).float()
     return tensor
 
 def roll(x, n, dim=0):  

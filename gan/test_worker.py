@@ -42,6 +42,12 @@ if  __name__ == '__main__':
                         help='if save visual results in folders')
     parser.add_argument('--random_seg_noise', action='store_true',
                         help='if save visual results in folders')
+    parser.add_argument('--align',    type=str,  choices=['shape', 'background', 'all', 'none'], 
+                        help='Which concept to align during generation.')
+    parser.add_argument('--shape_noise', action='store_true',
+                        help='Run with random noise for shape.')
+    parser.add_argument('--background_noise', action='store_true',
+                        help='Run with random noise for background.')
 
     args = parser.parse_args()
     

@@ -25,11 +25,6 @@ from PIL import Image
 
 if __name__ == '__main__':
 
-    seed = 1231251
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
 
     parser = argparse.ArgumentParser(description='Gans')
 
@@ -37,16 +32,26 @@ if __name__ == '__main__':
                         help='load from epoch')
     parser.add_argument('--model', type=str, default='',  
                         help='model name')
-    parser.add_argument('--n_samples', type=int, default=5,  
-                        help='Number of samples per embedding')
     parser.add_argument('--batch_size', type=int, default=10,  
                         help='batch_size')
+    parser.add_argument('--align',    type=str,  choices=['shape', 'background', 'all', 'none'], 
+                        help='Which concept to align during generation.')
+    parser.add_argument('--fix_seed', action='store_true',
+                        help='Fix seed.')
     args = parser.parse_args()
 
     epoch = args.epoch
     model_name = args.model
-    n_samples = args.n_samples
     batch_size = args.batch_size
+    align = args.align
+    fix_seed = args.fix_seed
+
+    if fix_seed:
+        seed = 1231251
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
 
     # set file name
     file = 'epoch_%d' % epoch
@@ -77,7 +82,7 @@ if __name__ == '__main__':
     netEb = ImgEncoder(num_chan=3, out_dim=scode_dim)
 
     # Dataset
-    dataset = BirdsDataset(datadir, mode='train')
+    dataset    = BirdsDataset(datadir, mode='test')
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # load models from checkpoint
@@ -96,19 +101,37 @@ if __name__ == '__main__':
     netEb = netEb.cuda()
 
     # # get batch of test samples
-    images, _, segs, txt_data, txt_len, captions = next(iter(dataloader))
+    images, _, segs, txt_data, txt_len, captions, *_ = next(iter(dataloader))
+
+    images = images.cuda()
+    segs = segs.cuda()    
+    txt_data = txt_data.cuda()
+    bimages = images
 
     netG.eval()
     netEs.eval()
     netEb.eval()
 
-    segs = segs.cuda()
-    txt_data = txt_data.cuda()
+    # # mismatch segmentations and backgrounds
+    # bimages = roll(images, 2, dim=0) # for text and seg mismatched backgrounds
+    # bsegs   = roll(segs, 2, dim=0)   # background segmentations
+    # segs    = roll(segs, 1, dim=0)   # for text mismatched segmentations
 
-    # mismatch segmentations and backgrounds
-    bimages = roll(images, 2, dim=0).cuda() # for text and seg mismatched backgrounds
-    bsegs   = roll(segs, 2, dim=0).cuda()   # background segmentations
-    segs    = roll(segs, 1, dim=0).cuda()   # for text mismatched segmentations
+    # # matched
+    # bimages = images
+    # bsegs   = segs
+    # segs    = segs
+
+    # alignment
+    if align == 'shape':
+        bimages = roll(images, 2, dim=0) # for text and seg mismatched backgrounds
+    elif align == 'background':
+        segs = roll(segs, 1, dim=0) # for text mismatched segmentations
+    elif align == 'all':
+        pass
+    elif align == 'none':
+        bimages = roll(images, 2, dim=0) # for text and seg mismatched backgrounds
+        segs = roll(segs, 1, dim=0) # for text mismatched segmentations
 
     # np to save
     np_segs    = np.repeat(to_numpy(segs), 3, 1) * 2 - 1
@@ -116,21 +139,19 @@ if __name__ == '__main__':
     np_bimages = to_numpy(bimages)
 
     # generate testing results
-    vis_samples = [None for i in range(n_samples + 3)]
+    vis_samples = [None for i in range(4)]
     vis_samples[0] = np_images
     vis_samples[1] = np_bimages
     vis_samples[2] = np_segs
     
-    for c in range(n_samples):
+    segs_code = netEs(segs)
+    bkgs_code = netEb(bimages)
+    
+    *_, f_images, z_list= netG(txt_data, txt_len, segs_code, bkgs_code)
+    
+    np_fakes = to_numpy(f_images)
 
-        segs_code = netEs(segs)
-        bkgs_code = netEb(bimages)
-        
-        *_, f_images, z_list= netG(txt_data, txt_len, segs_code, bkgs_code)
-        
-        np_fakes = to_numpy(f_images)
-
-        vis_samples[c+3] = np_fakes
+    vis_samples[3] = np_fakes
 
     # save noise tensors
     with open(os.path.join(sample_folder, z_file), 'bw') as f:

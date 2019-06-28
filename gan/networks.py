@@ -171,7 +171,8 @@ class Generator(nn.Module):
         self.txt_encoder_f = nn.GRUCell(300, 512)
         self.txt_encoder_b = nn.GRUCell(300, 512)
 
-    def forward(self, txt_data=None, txt_len=None, seg_cond=None, bkg_cond=None, z_list=None):
+    def forward(self, txt_data=None, txt_len=None, seg_cond=None, bkg_cond=None, z_list=None,
+        shape_noise=False, background_noise=False):
 
         out = []
 
@@ -199,6 +200,12 @@ class Generator(nn.Module):
             z_t, tmean, tlogsigma   = self.TCA(txt_cond)
             z_s, smean, slogsigma = self.SCA(seg_cond)
             z_b, bmean, blogsigma = self.BCA(bkg_cond)
+
+            if shape_noise:
+                z_s = torch.cuda.FloatTensor(z_s.size()).normal_()
+            if background_noise:
+                z_b = torch.cuda.FloatTensor(z_b.size()).normal_()
+
             z_list = [z_t, z_s, z_b]
             
             out.append((tmean, tlogsigma))
