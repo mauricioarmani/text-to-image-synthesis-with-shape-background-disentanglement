@@ -44,6 +44,8 @@ if __name__ == '__main__':
                         help='print losses per iteration')
     parser.add_argument('--KL_COE', type=float, default=0.5, metavar='N',
                         help='kl divergency coefficient.')
+    parser.add_argument('--CONSIST_COE', type=float, default=10, metavar='N',
+                        help='Consistency module coefficient.')
     parser.add_argument('--unet_checkpoint', type=str, default='', 
                         help='Unet checkpoint')
     parser.add_argument('--emb_dim', type=int, default=128, metavar='N',
@@ -58,11 +60,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # NNs
-    netG   = Generator(tcode_dim=512, scode_dim=args.scode_dim, emb_dim=args.emb_dim, hid_dim=128)
+    netG   = Generator(tcode_dim=512, scode_dim=args.scode_dim, emb_dim=args.emb_dim, hid_dim=128, args=args)
     netD   = Discriminator()
     netS   = Unet()
-    # netEs  = ImgEncoder(num_chan=1, out_dim=args.scode_dim)
-    netEs  = ImgEncoder(num_chan=3, out_dim=args.scode_dim) ######################## SEM SHAPE ##################
+    netEs  = ImgEncoder(num_chan=1, out_dim=args.scode_dim)
     netEb  = ImgEncoder(num_chan=3, out_dim=args.scode_dim)
 
     netD  = netD.cuda()

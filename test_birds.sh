@@ -4,38 +4,38 @@ name='SEG10_BG50L2_birds'
 
 epoch=500
 
-# # SHAPE ALIGNED
-# CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
-#     --dataset birds \
-#     --model_name ${name} \
-#     --load_from_epoch ${epoch} \
-#     --test_sample_num 10 \
-#     --save_visual_results \
-#     --batch_size 64 \
-#     --align shape
+# SHAPE ALIGNED
+CUDA_VISIBLE_DEVICES="2" python gan/test_worker.py \
+    --dataset birds \
+    --model_name ${name} \
+    --load_from_epoch ${epoch} \
+    --test_sample_num 10 \
+    --save_visual_results \
+    --batch_size 64 \
+    --align shape
 
-# # BACKGROUND ALIGNED
-# CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
-#     --dataset birds \
-#     --model_name ${name} \
-#     --load_from_epoch ${epoch} \
-#     --test_sample_num 10 \
-#     --save_visual_results \
-#     --batch_size 64 \
-#     --align background
+# BACKGROUND ALIGNED
+CUDA_VISIBLE_DEVICES="2" python gan/test_worker.py \
+    --dataset birds \
+    --model_name ${name} \
+    --load_from_epoch ${epoch} \
+    --test_sample_num 10 \
+    --save_visual_results \
+    --batch_size 64 \
+    --align background
 
-# # ALL ALIGNED
-# CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
-#     --dataset birds \
-#     --model_name ${name} \
-#     --load_from_epoch ${epoch} \
-#     --test_sample_num 10 \
-#     --save_visual_results \
-#     --batch_size 64 \
-#     --align all \
+# ALL ALIGNED
+CUDA_VISIBLE_DEVICES="2" python gan/test_worker.py \
+    --dataset birds \
+    --model_name ${name} \
+    --load_from_epoch ${epoch} \
+    --test_sample_num 10 \
+    --save_visual_results \
+    --batch_size 64 \
+    --align all \
 
 # ALL ALIGNED AND RANDOM SHAPE NOISE
-CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
+CUDA_VISIBLE_DEVICES="2" python gan/test_worker.py \
     --dataset birds \
     --model_name ${name} \
     --load_from_epoch ${epoch} \
@@ -46,7 +46,7 @@ CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
     --shape_noise
 
 # ALL ALIGNED AND RANDOM BACKGROUND NOISE
-CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
+CUDA_VISIBLE_DEVICES="2" python gan/test_worker.py \
     --dataset birds \
     --model_name ${name} \
     --load_from_epoch ${epoch} \
@@ -57,7 +57,7 @@ CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
     --background_noise
 
 # ALL ALIGNED AND RANDOM BACKGROUND AND SHAPE NOISES
-CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
+CUDA_VISIBLE_DEVICES="2" python gan/test_worker.py \
     --dataset birds \
     --model_name ${name} \
     --load_from_epoch ${epoch} \
@@ -68,12 +68,12 @@ CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
     --shape_noise \
     --background_noise  
 
-# # NOTHING ALIGNED
-# CUDA_VISIBLE_DEVICES="1" python gan/test_worker.py \
-#     --dataset birds \
-#     --model_name ${name} \
-#     --load_from_epoch ${epoch} \
-#     --test_sample_num 10 \
-#     --save_visual_results \
-#     --batch_size 64 \
-#     --align none 
+# NOTHING ALIGNED
+CUDA_VISIBLE_DEVICES="2" python gan/test_worker.py \
+    --dataset birds \
+    --model_name ${name} \
+    --load_from_epoch ${epoch} \
+    --test_sample_num 10 \
+    --save_visual_results \
+    --batch_size 64 \
+    --align none 

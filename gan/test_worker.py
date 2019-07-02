@@ -48,11 +48,13 @@ if  __name__ == '__main__':
                         help='Run with random noise for shape.')
     parser.add_argument('--background_noise', action='store_true',
                         help='Run with random noise for background.')
+    parser.add_argument('--manipulate',   action='store_true',
+                        default=False, help='Framework for image manipulation.')
 
     args = parser.parse_args()
     
     # NNs
-    netG  = Generator(tcode_dim=512, scode_dim=1024, emb_dim=128, hid_dim=128)
+    netG  = Generator(tcode_dim=512, scode_dim=1024, emb_dim=128, hid_dim=128, args=args)
     netEs = ImgEncoder(num_chan=1, out_dim=1024)
     netEb = ImgEncoder(num_chan=3, out_dim=1024)
 

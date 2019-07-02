@@ -42,5 +42,5 @@ fid_value = fid.calculate_frechet_distance(mu_gen, sigma_gen, mu_real, sigma_rea
 print('Image path:', image_path)
 print("FID: %s" % fid_value)
 
-json_path = os.path.join(FLAGS.image_folder ,FLAGS.h5_file[:-3] + '_FID.json')
+json_path = os.path.join(FLAGS.image_folder, FLAGS.h5_file[:-3] + '_FID.json')
 json.dump({'FID': fid_value}, open(json_path,'w'), indent=True)
