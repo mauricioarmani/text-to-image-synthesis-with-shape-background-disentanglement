@@ -13,6 +13,7 @@ model_root = os.path.join(proj_root, 'models')
 save_root  =  os.path.join(proj_root, 'results')
 
 from gan.data_loader import BirdsDataset
+from gan.data_loader_flowers import FlowersDataset
 from gan.networks import Generator
 from gan.networks import ImgEncoder
 
@@ -64,7 +65,10 @@ if  __name__ == '__main__':
     datadir = os.path.join(data_root, data_name)
 
     print('> Loading test data ...')
-    dataset    = BirdsDataset(datadir, mode='test')
+    if args.dataset == 'birds':
+        dataset = BirdsDataset(datadir, mode='test')
+    elif args.dataset == 'flowers':
+        dataset = FlowersDataset(datadir, mode='test')
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     # create results folder
