@@ -49,6 +49,7 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netEs, net
         org_dset = org_h5.create_dataset('output_{}'.format(highest_res), 
                                                 shape=(num_examples, highest_res, highest_res, 3), 
                                                 dtype=np.uint8)
+        org_emb_dset = org_h5.create_dataset('embedding', shape=(num_examples, 512), dtype=np.float) # embeddings
     else:
         org_dset = None
         org_emb_dset = None
@@ -79,7 +80,7 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netEs, net
 
             np_test_images = to_numpy(test_images)
 
-            this_batch_size =  np_test_images.shape[0]
+            this_batch_size = np_test_images.shape[0]
 
             all_choosen_caption.extend(chosen_captions)    
             if org_dset is not None:
@@ -106,8 +107,9 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netEs, net
                 bkgs_code = netEb(test_bimages)
 
                 test_outputs = {}
-                _, _, _, fake_images, _ = netG(txt_data, txt_len, segs_code, bkgs_code, 
-                                                shape_noise=args.shape_noise, background_noise=args.background_noise)
+                _, _, _, fake_images, _, this_test_embeddings = netG(txt_data, txt_len, segs_code, bkgs_code, 
+                                                                    shape_noise=args.shape_noise, 
+                                                                    background_noise=args.background_noise, vs=True)
 
                 test_outputs['output_64'] = fake_images
 
@@ -115,7 +117,7 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netEs, net
                     if init_flag is True:
                         dset['saveIDs']   = h5file.create_dataset('saveIDs', shape=(total_number,), dtype=np.int64)
                         dset['classIDs']  = h5file.create_dataset('classIDs', shape=(total_number,), dtype=np.int64)
-
+                        dset['embedding'] = h5file.create_dataset('embedding', shape=(total_number, 512), dtype=np.float) # embedding
                         for k in test_outputs.keys():
                             vis_samples[k] = [None for i in range(args.test_sample_num + 1)] # +1 to fill real image
                             img_shape = test_outputs[k].size()[2::]
@@ -145,6 +147,7 @@ def test_gan(dataloader, save_root, model_folder, model_marker, netG, netEs, net
                     dset[typ][start: start + bs] = this_sample
                     dset['saveIDs'][start: start + bs] = saveIDs
                     dset['classIDs'][start: start + bs] = classIDs
+                    dset['embedding'][start: start + bs] = this_test_embeddings.detach().cpu() # embedding
                     data_count[typ] = start + bs
             
             print('saved files [sample {}/{}]: '.format(start_count, num_examples), data_count)  

@@ -54,7 +54,7 @@ if  __name__ == '__main__':
     args = parser.parse_args()
     
     # NNs
-    netG  = Generator(tcode_dim=512, scode_dim=1024, emb_dim=128, hid_dim=128, args=args)
+    netG  = Generator(tcode_dim=512, scode_dim=1024, emb_dim=128, hid_dim=128)
     netEs = ImgEncoder(num_chan=1, out_dim=1024)
     netEb = ImgEncoder(num_chan=3, out_dim=1024)
 

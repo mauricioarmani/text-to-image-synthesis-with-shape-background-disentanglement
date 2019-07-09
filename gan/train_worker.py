@@ -42,7 +42,7 @@ if __name__ == '__main__':
                         help='how frequent to save the model')
     parser.add_argument('--verbose_per_iter', type=int, default=50,
                         help='print losses per iteration')
-    parser.add_argument('--KL_COE', type=float, default=0.5, metavar='N',
+    parser.add_argument('--KL_COE', type=float, default=0.5, metavar='N', # TAGAN
                         help='kl divergency coefficient.')
     parser.add_argument('--CONSIST_COE', type=float, default=10, metavar='N',
                         help='Consistency module coefficient.')
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # NNs
-    netG   = Generator(tcode_dim=512, scode_dim=args.scode_dim, emb_dim=args.emb_dim, hid_dim=128, args=args)
+    netG   = Generator(tcode_dim=512, scode_dim=args.scode_dim, emb_dim=args.emb_dim, hid_dim=128)
     netD   = Discriminator()
     netS   = Unet()
     netEs  = ImgEncoder(num_chan=1, out_dim=args.scode_dim)
