@@ -2,10 +2,10 @@
 # name='model2' # SEG 10 - BG 20
 # name='model3' # SEG 0 - BG 10
 # name='model4' # SEG 10 - BG 50
-# name='model5' # manipulate = True
-# name='model6' # manipulate = False - L1Loss
-# name='model7' # manipulate = False - L1Loss - "sem shape"
-name='test'
+
+# name='SEG10_BG10L1_IDTLOSS_OBJLOSS_birds'
+
+name='SEG10_BG10L1_0KL'
 device=3
 dataset='birds'
 CUDA_VISIBLE_DEVICES=${device} python gan/train_worker.py \
@@ -16,6 +16,6 @@ CUDA_VISIBLE_DEVICES=${device} python gan/train_worker.py \
                                 --d_lr 0.0002 \
                                 --save_freq 10 \
                                 --unet_checkpoint 'segmentation/checkpoints/checkpoint590.pt' \
-                                # --manipulate
                                 # --reuse_weights \
-                                # --load_from_epoch 440
+                                # --load_from_epoch 390
+                                # --manipulate \                             

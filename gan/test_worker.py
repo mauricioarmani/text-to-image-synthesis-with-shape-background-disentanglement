@@ -49,6 +49,8 @@ if  __name__ == '__main__':
                         help='Run with random noise for shape.')
     parser.add_argument('--background_noise', action='store_true',
                         help='Run with random noise for background.')
+    parser.add_argument('--manipulate',   action='store_true',
+                        default=False, help='Framework for image manipulation.')
 
     args = parser.parse_args()
     

@@ -127,8 +127,8 @@ class Generator(nn.Module):
         self.TCA = CA(tcode_dim, emb_dim)
         self.SCA = CA(scode_dim, emb_dim)
         self.BCA = CA(scode_dim, emb_dim)
-
-        self.vec_to_tensor = VecToFeatMap(emb_dim*3, 4, 4, hid_dim*8) # TXT BG SEG
+        
+        self.vec_to_tensor = VecToFeatMap(emb_dim*3, 4, 4, hid_dim*8)
 
         cur_dim = hid_dim*8
 
@@ -172,7 +172,7 @@ class Generator(nn.Module):
         self.txt_encoder_b = nn.GRUCell(300, 512)
 
     def forward(self, txt_data=None, txt_len=None, seg_cond=None, bkg_cond=None, z_list=None,
-        shape_noise=False, background_noise=False):
+        shape_noise=False, background_noise=False, vs=False):
 
         out = []
 
@@ -197,14 +197,10 @@ class Generator(nn.Module):
             h = (h_f + h_b) / 2
             txt_cond = h.sum(0) / mask.sum(0)
 
-            z_t, tmean, tlogsigma   = self.TCA(txt_cond)
+            z_t, tmean, tlogsigma = self.TCA(txt_cond)
             z_s, smean, slogsigma = self.SCA(seg_cond)
             z_b, bmean, blogsigma = self.BCA(bkg_cond)
 
-            if shape_noise:
-                z_s = torch.cuda.FloatTensor(z_s.size()).normal_()
-            if background_noise:
-                z_b = torch.cuda.FloatTensor(z_b.size()).normal_()
 
             z_list = [z_t, z_s, z_b]
             
@@ -212,7 +208,16 @@ class Generator(nn.Module):
             out.append((smean, slogsigma))
             out.append((bmean, blogsigma))
 
-        z = torch.cat(z_list, dim=1) # BG SEG
+        z_t, z_s, z_b = z_list
+
+        if shape_noise:
+            z_s = torch.cuda.FloatTensor(z_s.size()).normal_()
+        if background_noise:
+            z_b = torch.cuda.FloatTensor(z_b.size()).normal_()
+
+        z_list = [z_t, z_s, z_b]
+
+        z = torch.cat(z_list, dim=1)
 
         x = self.vec_to_tensor(z)
 
@@ -230,6 +235,9 @@ class Generator(nn.Module):
 
         out.append(img_64)
         out.append(z_list)
+        
+        if vs:
+            out.append(txt_cond)
 
         return out
 

@@ -43,7 +43,6 @@ def imresize_shape(img, outshape):
         temp = np.reshape(temp, temp.shape + (1,))
     return temp
 
-
 def IndexH5(h5_array, indices):
     read_list = []
     for idx in indices:
@@ -95,3 +94,31 @@ def save_images(X_list, save_path=None, save=True, dim_ordering='tf'):
         save_image = img.astype(np.uint8)
         writeImg(save_image, save_path)
     return img
+
+def imshow(img, size=None):
+    if size is not None:
+        plt.figure(figsize = size)
+    else:
+        plt.figure()
+    plt.imshow(img)
+    plt.show()
+
+def normalize_img(X):
+    min_, max_ = np.min(X), np.max(X)
+    X = (X - min_)/ (max_ - min_ + 1e-9)
+    X = X*255
+    return X.astype(np.uint8) 
+
+def Indexflow(Totalnum, batch_size, random=True):
+    numberofchunk = int(Totalnum + batch_size - 1)// int(batch_size)   # the floor
+    #Chunkfile = np.zeros((batch_size, row*col*channel))
+    totalIndx = np.arange(Totalnum).astype(np.int)
+    if random is True:
+        totalIndx = np.random.permutation(totalIndx)
+        
+    chunkstart = 0
+    for chunkidx in range(int(numberofchunk)):
+        thisnum = min(batch_size, Totalnum - chunkidx*batch_size)
+        thisInd = totalIndx[chunkstart: chunkstart + thisnum]
+        chunkstart += thisnum
+        yield thisInd       

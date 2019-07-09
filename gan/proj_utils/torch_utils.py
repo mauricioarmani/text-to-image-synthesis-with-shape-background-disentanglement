@@ -29,3 +29,21 @@ def to_binary(tensor):
 
 def roll(x, n, dim=0):  
     return torch.cat((x[-n:], x[:-n]), dim=dim)
+
+def to_variable(x, requires_grad=True,  var=True,volatile=False):
+    
+    if type(x) is Variable:
+        return x
+    if type(x) is np.ndarray:
+        x = torch.from_numpy(x.astype(np.float32))
+    if var:
+        x = Variable(x, requires_grad=requires_grad, volatile=volatile)
+    x.volatile = volatile 
+    
+    return x
+
+def to_device(src, var=True, volatile=False, requires_grad=True):
+    
+    requires_grad = requires_grad and (not volatile)
+    src = to_variable(src, var=var, volatile=volatile, requires_grad=requires_grad)
+    return src.cuda()

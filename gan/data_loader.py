@@ -65,13 +65,22 @@ class BirdsDataset(Dataset):
         return captions[randid]
 
     def transforms(self, image):
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.RandomCrop(64),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.ToTensor()
-        ])
-        return transform(image)
+        if self.mode == 'train':
+            transform = transforms.Compose([
+                transforms.ToPILImage(),
+                transforms.RandomCrop(64),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.ToTensor()
+            ])
+            return transform(image)
+        elif self.mode == 'test':
+            transform = transforms.Compose([
+                transforms.ToPILImage(),
+                transforms.CenterCrop(64),
+                transforms.ToTensor()
+            ])
+            return transform(image)
+
 
     def __getitem__(self, index):
         w_index = np.random.randint(0, self.size)
