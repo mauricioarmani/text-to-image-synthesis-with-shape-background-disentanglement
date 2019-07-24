@@ -106,8 +106,10 @@ def train_gan(dataloader, model_folder, netG, netD, netS, netEs, netEb, args):
         start_epoch = 1
 
     ''' create labels '''
-    r_labels = torch.FloatTensor(args.batch_size, 1).fill_(1).cuda()
-    f_labels = torch.FloatTensor(args.batch_size, 1).fill_(0).cuda()
+    #r_labels = torch.FloatTensor(args.batch_size, 1).fill_(1).cuda()
+    #f_labels = torch.FloatTensor(args.batch_size, 1).fill_(0).cuda()
+    #r_labels = torch.FloatTensor(args.batch_size).fill_(1).cuda()
+    #f_labels = torch.FloatTensor(args.batch_size).fill_(0).cuda()
     
     # --- Start training ---
     for epoch in range(start_epoch, tot_epoch + 1):
@@ -128,6 +130,11 @@ def train_gan(dataloader, model_folder, netG, netD, netS, netEs, netEb, args):
 
         for i, data in enumerate(dataloader):
             images, w_images, segs, txt_data, txt_len, _ = data
+            #unique, counts = np.unique(segs.data.numpy(), return_counts=True)
+            #print(dict(zip(unique, counts)))
+
+            r_labels = torch.FloatTensor(images.size(0)).fill_(1).cuda()
+            f_labels = torch.FloatTensor(images.size(0)).fill_(0).cuda()
 
             it = epoch*len(dataloader) + i
 

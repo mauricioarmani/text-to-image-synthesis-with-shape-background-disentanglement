@@ -10,6 +10,7 @@ data_root = os.path.join(proj_root, 'data')
 model_root = os.path.join(proj_root, 'models')
 
 from gan.data_loader import BirdsDataset
+from gan.data_loader_flowers import FlowersDataset
 from gan.networks import Generator
 from gan.networks import Discriminator
 from gan.networks import ImgEncoder
@@ -76,8 +77,11 @@ if __name__ == '__main__':
     datadir = os.path.join(data_root, data_name)
     
     print('> Loading training data ...')
-    dataset    = BirdsDataset(datadir, mode='train')
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+    if args.dataset == 'birds':
+        dataset = BirdsDataset(datadir, mode='train')
+    elif args.dataset == 'flowers':
+        dataset = FlowersDataset(datadir, mode='train')
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     # create model folder
     model_name = '{}_{}'.format(args.model_name, data_name)
