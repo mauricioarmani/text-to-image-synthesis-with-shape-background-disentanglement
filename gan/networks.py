@@ -236,9 +236,6 @@ class Generator(nn.Module):
         out.append(img_64)
         out.append(z_list)
         
-        if vs:
-            out.append(txt_cond)
-
         return out
 
 
@@ -370,4 +367,4 @@ def weights_init(m):
             m.weight.data.normal_(0.0, 0.02)
     elif classname.find('BatchNorm') != -1: 
         m.weight.data.normal_(1.0, 0.02)
-        m.bias.data.fill_(0)
+        m.bias.data.fill_(0)        

@@ -24,10 +24,13 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', type=str, default=None)
     parser.add_argument('--load_from_epoch', type=int, default= 0, 
                         help='load from epoch')
+    parser.add_argument('--idx', type=int, default=0, 
+                        help='idx')
 
     args = parser.parse_args()
 
     model_name = args.model_name
+    idx = args.idx
 
     # NNs
     netG  = Generator(tcode_dim=512, scode_dim=1024, emb_dim=128, hid_dim=128)
@@ -80,7 +83,7 @@ if __name__ == '__main__':
 
     z_t, z_s, z_b = z_list
 
-    samples_folder = os.path.join(disent_root, 'samples')
+    samples_folder = os.path.join(disent_root, 'samples%d' % idx)
     if not os.path.exists(samples_folder):
         os.makedirs(samples_folder)
 

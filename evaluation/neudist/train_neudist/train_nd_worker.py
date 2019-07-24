@@ -17,7 +17,8 @@ from collections import OrderedDict
 from gan.neuralDist.trainNeuralDist  import train_nd
 from gan.neuralDist.neuralDistModel  import ImgSenRanking
 from gan.neuralDist.neuralDistModel  import ImageEncoder
-from gan.fuel.datasets import TextDataset
+from gan.data_loader import BirdsDataset
+from gan.data_loader import Dataset
 
     
 if  __name__ == '__main__':
@@ -70,21 +71,13 @@ if  __name__ == '__main__':
     vs_model    = ImgSenRanking(dim_image, sent_dim, hid_dim)
     img_encoder = ImageEncoder()
 
-    device_id = getattr(args, 'device_id', 0)
+    vs_model    = vs_model.cuda()
+    img_encoder = img_encoder.cuda()
 
-    if args.cuda:
-        vs_model    = vs_model.cuda(device_id)
-        img_encoder = img_encoder.cuda(device_id)
+    print('> Loading test data ...')
+    dataset_train = BirdsDataset(datadir, mode='train')
+    dataset_test  = BirdsDataset(datadir, mode='test')
 
-        import torch.backends.cudnn as cudnn
-        cudnn.benchmark = True
-    
-    dataset = TextDataset(datadir, 'cnn-rnn', 4)
-    filename_test = os.path.join(datadir, 'test')
-    dataset.test = dataset.get_data(filename_test)
-    filename_train = os.path.join(datadir, 'train')
-    dataset.train = dataset.get_data(filename_train)
-    
     model_name ='{}_{}'.format(args.model_name, data_name)
     print ('>> START training ')
-    train_nd(dataset, model_root, model_name, img_encoder, vs_model, args)
+    train_nd(dataset_train, dataset_test, model_root, model_name, img_encoder, vs_model, args)

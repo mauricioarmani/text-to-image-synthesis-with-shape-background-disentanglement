@@ -37,13 +37,14 @@ class ImageEncoder(nn.Module):
         feat = self.encoder(x)
         return feat
 
-class ImgSenRanking(torch.nn.Module):
+class ImgSenRanking(torch.nn.Module): # WORD
     def __init__(self, dim_image, sent_dim,  hid_dim):
         super(ImgSenRanking, self).__init__()
         self.register_buffer('device_id', torch.IntTensor(1))
 
-        self.linear_img = torch.nn.Linear(dim_image, hid_dim)
-        self.linear_sent = torch.nn.Linear(sent_dim, hid_dim)
+        self.linear_img = nn.Linear(dim_image, hid_dim)
+        self.txt_encoder = nn.GRU(300, 512, batch_first=True)
+        self.linear_sent = nn.Linear(sent_dim, hid_dim)
 
         self.init_weights()
 
@@ -53,9 +54,30 @@ class ImgSenRanking(torch.nn.Module):
         self.linear_img.bias.data.fill_(0)
         self.linear_sent.bias.data.fill_(0)
 
-    def forward(self, sent, img):
-        img_vec   = self.linear_img(img)    
-        sent_vec = self.linear_sent(sent)  
+    def forward(self, txt, img):
+        img_vec   = self.linear_img(img)
+        txt_vec   = self.txt_encoder(txt)
+        sent_vec = self.linear_sent(txt_vec[1].squeeze(0))
         return l2norm(sent_vec), l2norm(img_vec)
-        
 
+# class ImgSenRanking(torch.nn.Module): # CHAR
+#     def __init__(self, dim_image, sent_dim,  hid_dim):
+#         super(ImgSenRanking, self).__init__()
+#         self.register_buffer('device_id', torch.IntTensor(1))
+
+#         self.linear_img = torch.nn.Linear(dim_image, hid_dim)
+#         self.linear_sent = torch.nn.Linear(sent_dim, hid_dim)
+
+#         self.init_weights()
+
+#     def init_weights(self):
+#         xavier_weight(self.linear_img.weight.data)
+#         xavier_weight(self.linear_sent.weight.data)
+#         self.linear_img.bias.data.fill_(0)
+#         self.linear_sent.bias.data.fill_(0)
+
+#     def forward(self, sent, img):
+        
+#         img_vec   = self.linear_img(img)    
+#         sent_vec = self.linear_sent(sent)   
+#         return l2norm(sent_vec), l2norm(img_vec)       

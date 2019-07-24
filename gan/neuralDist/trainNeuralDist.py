@@ -8,6 +8,7 @@ from torch import autograd
 from torch.autograd import Variable
 from torch.nn import Parameter
 import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
 
 from torch.nn.utils import clip_grad_norm
 from ..proj_utils.plot_utils import *
@@ -22,21 +23,22 @@ import random
 TINY = 1e-8
 
 
+def train_nd(dataset_train, dataset_test, model_root, mode_name, img_encoder, vs_model, args):
 
-def train_nd(dataset, model_root, mode_name, img_encoder, vs_model, args):
+    dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
+    dataloader_test  = DataLoader(dataset_test, batch_size=args.batch_size, shuffle=True)
+
     lr = args.lr
     tot_epoch = args.maxepoch
-    train_sampler = dataset.train.next_batch
-    test_sampler  = dataset.test.next_batch
 
-    train_num = dataset.train._num_examples
-    test_num  = dataset.test._num_examples 
+    train_num = len(dataset_train)
+    test_num  = len(dataset_test)
 
     number_example = train_num + test_num
     prob_use_train = float(train_num)/number_example
 
-    pool = Pool(3)
-    trans_func = get_trans(img_encoder)
+    # pool = Pool(3)
+    transform = get_transform(img_encoder)
     updates_per_epoch = int(number_example / args.batch_size)
         
     ''' configure optimizer '''
@@ -61,7 +63,7 @@ def train_nd(dataset, model_root, mode_name, img_encoder, vs_model, args):
         start_epoch = 1
 
     loss_plot = plot_scalar(name = "loss", env= mode_name, rate = args.display_freq)
-    lr_plot   = plot_scalar(name = "lr", env= mode_name, rate = args.display_freq)
+    lr_plot   = plot_scalar(name = "lr",   env= mode_name, rate = args.display_freq)
 
     for epoch in range(start_epoch, tot_epoch):
         start_timer = time.time()
@@ -75,22 +77,20 @@ def train_nd(dataset, model_root, mode_name, img_encoder, vs_model, args):
             img_encoder.eval()
 
             if np.random.random() >= prob_use_train:
-                images, wrong_images, np_embeddings, _, _ = train_sampler(args.batch_size, args.num_emb)
+                images, _, _, txt_code, txt_len, _ = iter(dataloader_train).next()
             else:
-                images, wrong_images, np_embeddings, _, _ = test_sampler(args.batch_size, args.num_emb)
+                images, _, _, txt_code, txt_len, _, _, _ = iter(dataloader_test).next()
             
-            img_224     =  pre_process(images["output_256"], pool, trans_func)
-            
-            embeddings  = to_device(np_embeddings, requires_grad=False)
-            img_224     = to_device(img_224,  volatile=True)
-            
-            img_feat   = img_encoder(img_224)
-            
-            img_feat   = img_feat.squeeze(-1).squeeze(-1)
+            img_224 = pre_process(images, transform)
 
-            
-            img_feat   = to_device(img_feat.data, requires_grad=True)
-            sent_emb, img_emb = vs_model(embeddings, img_feat)
+            img_224 = to_device(img_224,  volatile=True)
+            txt_code = to_device(txt_code,  volatile=True)
+
+            img_feat = img_encoder(img_224)
+            img_feat = img_feat.squeeze(-1).squeeze(-1)
+
+            img_feat = to_device(img_feat.data, requires_grad=True)
+            sent_emb, img_emb = vs_model(txt_code, img_feat)
             cost = PairwiseRankingLoss(img_emb, sent_emb, args.margin)
 
             optimizer.zero_grad()
@@ -136,7 +136,7 @@ def resize_images(img, dst_shape):
     tmp = scipy.misc.imresize(img, dst_shape)
     return tmp
 
-def get_trans(img_encoder):
+def get_transform(img_encoder):
     img_tensor_list = []
     trans = transforms.Compose([
                 transforms.ToTensor(),
@@ -146,21 +146,21 @@ def get_trans(img_encoder):
     return trans
 
 def _process(inputs):
-    this_img, trans =inputs
+    this_img, trans = inputs
     this_crop = resize_images(this_img, (299, 299))
     this_img_tensor = trans(this_crop)
     return this_img_tensor
 
-def pre_process(images, pool, trans=None):
-    
+# def pre_process(images, pool, trans=None):
+def pre_process(images, trans=None):
     images = (images + 1) /2 * 255
-    images = images.transpose(0, 2,3,1)
+    images = images.permute(0,2,3,1)
     bs = images.shape[0]
     img_tensor_list = []
-    targets = pool.imap(_process,  ( (images[idx], trans) for idx in range(bs) ) )
+    targets = [_process((images[idx], trans)) for idx in range(bs)]
     
     for idx in range(bs):
-        this_img_tensor = targets.__next__()
+        this_img_tensor = targets[idx]
         img_tensor_list.append(this_img_tensor)
 
     img_tensor_all = torch.stack(img_tensor_list,0)

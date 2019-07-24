@@ -14,8 +14,6 @@ from ..proj_utils.plot_utils import *
 from ..proj_utils.torch_utils import *
 from ..proj_utils.local_utils import Indexflow, IndexH5
 
-from torch.multiprocessing import Pool
-
 import scipy
 import time, json
 import random, h5py
@@ -40,16 +38,16 @@ def _process(inputs):
     this_img_tensor = trans(this_crop)
     return this_img_tensor
 
-def pre_process(images, pool, trans=None):
+def pre_process(images, trans=None):
     
     images = (images + 1) /2 * 255
-    images = images.transpose(0, 2,3,1)
+    images = images.transpose(0,2,3,1)
     bs = images.shape[0]
     img_tensor_list = []
-    targets = pool.imap(_process,  ( (images[idx], trans) for idx in range(bs) ) )
+    targets = [_process((images[idx], trans)) for idx in range(bs)]
     
     for idx in range(bs):
-        this_img_tensor = targets.__next__()
+        this_img_tensor = targets[idx]
         img_tensor_list.append(this_img_tensor)
 
     img_tensor_all = torch.stack(img_tensor_list, 0)
@@ -63,14 +61,8 @@ def test_nd(h5_path, weight_root, img_encoder, vs_model, args, target_resolution
     result_path  = os.path.join(h5_folder, h5_name_noext+"_epoch_{}_neu_dist.json".format(args.load_from_epoch))
     print("{} exists or not: ".format(h5_path), os.path.exists(h5_path))
     with h5py.File(h5_path,'r') as h5_data:
-        pool = Pool(3)
         all_embeddings = h5_data["embedding"]
         
-        # all_keys = []
-        # for this_key in h5_data.keys():
-        #     if "output" in this_key:
-        #         all_keys.append(this_key)
-
         all_keys = ['output_'+str(target_resolution)]
         trans_func = get_trans(img_encoder)
 
@@ -79,33 +71,39 @@ def test_nd(h5_path, weight_root, img_encoder, vs_model, args, target_resolution
         weights_dict = torch.load(weightspath, map_location=lambda storage, loc: storage)
         print('reload weights from {}'.format(weightspath))
         vs_model.load_state_dict(weights_dict)# 12)
-        start_epoch = args.load_from_epoch + 1
 
         vs_model.eval()
         img_encoder.eval()
         all_results = {}
         # for this_key in all_keys:
         for this_key in ['output_64']:
-            this_images = h5_data[this_key] 
+            this_images = h5_data[this_key]
             num_imgs = this_images.shape[0]
             all_distance = 0
             all_cost_list = []
             print("Now processing {}".format(this_key))
             n_processed = 0
             for thisInd in Indexflow(num_imgs, args.batch_size, random=False): #
-                
                 this_batch    = IndexH5(this_images, thisInd) 
                 np_embeddings = IndexH5(all_embeddings, thisInd)
 
-                img_299     =  pre_process(this_batch, pool, trans_func)
-                embeddings  =  to_device(np_embeddings, volatile=True)
-                img_299     =  to_device(img_299, volatile=True)
-                img_feat    =  img_encoder(img_299)
-                img_feat    =  img_feat.squeeze(-1).squeeze(-1)
-                img_feat   = to_device(img_feat.data, volatile=True)
+                img_299 = pre_process(this_batch, trans_func)
+
+                with torch.no_grad():
+                    embeddings = torch.from_numpy(np_embeddings.astype(np.float32)).cuda()
+                    img_299    = img_299.cuda()
+
+                # print(img_299[1])
+                img_feat = img_encoder(img_299)
+                # print(img_feat[0])
+                # print(img_feat[1])
+                img_feat = img_feat.squeeze(-1).squeeze(-1)
+
+                with torch.no_grad():
+                    img_feat = img_feat.clone()
+
                 sent_emb, img_emb = vs_model(embeddings, img_feat)
-                
-                cost     = torch.sum(img_emb*sent_emb, 1, keepdim=False)
+                cost = torch.sum(img_emb*sent_emb, 1, keepdim=False)
                 cost_val = cost.cpu().data.numpy()
                 all_cost_list.append(cost_val)
 

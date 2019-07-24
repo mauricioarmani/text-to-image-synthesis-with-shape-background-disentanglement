@@ -17,8 +17,6 @@ from gan.networks import ImgEncoder
 from segmentation.train import Unet
 from gan.proj_utils.torch_utils import roll
 
-from gan.train import train_gan
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Gans')

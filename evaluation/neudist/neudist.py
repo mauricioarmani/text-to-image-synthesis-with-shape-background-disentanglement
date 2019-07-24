@@ -19,7 +19,7 @@ from gan.neuralDist.neuralDistModel  import ImageEncoder
 if  __name__ == '__main__':
     
     dim_image    =  1536
-    sent_dim     =  1024
+    sent_dim     =  512#1024
     hid_dim      =  512
 
     parser = argparse.ArgumentParser(description = 'test nd') 
