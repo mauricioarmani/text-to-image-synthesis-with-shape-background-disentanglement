@@ -1,14 +1,14 @@
 # name="SEG10_BG50L2"
-# name="SEG10_BG10L1"
+name="SEG10_BG10L1"
 # name="SEG10_BG10L1_0KL"
 epoch="500"
 device=0
 
-CUDA_VISIBLE_DEVICES=${device} python sampling/sampler.py --model ${name} \
-                                                          --epoch ${epoch} \
-                                                          --batch_size 160 \
-                                                          --align none \
-                                                          # --fix_seed
+# CUDA_VISIBLE_DEVICES=${device} python sampling/sampler.py --model ${name} \
+#                                                           --epoch ${epoch} \
+#                                                           --batch_size 160 \
+#                                                           --align none \
+#                                                           # --fix_seed
 
 # CUDA_VISIBLE_DEVICES=${device} python sampling/shape_consistency.py --model ${name} \
 #                                                           --epoch ${epoch} \
@@ -20,7 +20,13 @@ CUDA_VISIBLE_DEVICES=${device} python sampling/sampler.py --model ${name} \
 #                                                           --batch_size 80 \
 #                                                           --align none
 
-# CUDA_VISIBLE_DEVICES=${device} python sampling/bkg_consistency.py --model ${name} \
-#                                                           --epoch ${epoch} \
-#                                                           --batch_size 80 \
-#                                                           --align none
+
+
+for i in $(seq 1 100)
+do
+CUDA_VISIBLE_DEVICES=${device} python sampling/bkg_consistency.py --model ${name} \
+                                                          --epoch ${epoch} \
+                                                          --batch_size 80 \
+                                                          --align none \
+                                                          --idx $i
+done 

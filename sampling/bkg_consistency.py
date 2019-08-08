@@ -38,6 +38,8 @@ if __name__ == '__main__':
                         help='Which concept to align during generation.')
     parser.add_argument('--fix_seed', action='store_true',
                         help='Fix seed.')
+    parser.add_argument('--idx', type=int, default=0, 
+                        help='idx')
     args = parser.parse_args()
 
     epoch = args.epoch
@@ -45,6 +47,7 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     align = args.align
     fix_seed = args.fix_seed
+    idx = args.idx
 
     if fix_seed:
         seed = 1231251
@@ -57,7 +60,7 @@ if __name__ == '__main__':
     file = 'epoch_%d' % epoch
 
     sample_name = file
-    png_file = file + '.png'
+    png_file = file + '%d.png' % idx
     txt_file = file + '.txt' 
     z_file = file + '.pickle'
 
@@ -107,53 +110,35 @@ if __name__ == '__main__':
     netEs.eval()
     netEb.eval()
 
+    
+    # bimages = roll(images, i+1, dim=0) # for text and seg mismatched backgrounds
+    np_bimages = to_numpy(bimages)
+    np_segs    = np.repeat(to_numpy(segs), 3, 1) * 2 - 1
 
-    vis_samples = [None for i in range(4+5*2)]
-    for i in range(6):
-        # alignment
-        bimages = roll(images, i+1, dim=0) # for text and seg mismatched backgrounds
-        # segs = roll(segs, i+1, dim=0) # for text mismatched segmentations
+    n = 4
 
-        # np to save
-        np_segs    = np.repeat(to_numpy(segs), 3, 1) * 2 - 1
-        np_images  = to_numpy(images)
-        np_bimages = to_numpy(bimages)
+    vis_samples = [None for i in range(1+n)]
 
+    vis_samples[0] = np_segs
+    for i in range(n):
         # generate testing results
-        vis_samples[0] = np_images
-        vis_samples[1] = np_segs
-        vis_samples[2+i*2] = np_bimages
-        
         segs_code = netEs(segs)
-        bkgs_code = netEb(bimages)
+        bkgs_code = netEb(bimages[i].unsqueeze(0).repeat(batch_size,1,1,1))
 
         *_, f_images, z_list= netG(txt_data, txt_len, segs_code, bkgs_code)
         
         np_fakes = to_numpy(f_images)
 
-        vis_samples[3+i*2] = np_fakes
-
-    # # save noise tensors
-    # with open(os.path.join(sample_folder, z_file), 'bw') as f:
-    #     pickle.dump(z_list, f)
+        vis_samples[0]   = np.concatenate((np.expand_dims(np.zeros_like(np_bimages[i])-1, 0), np_segs))
+        vis_samples[i+1] = np.concatenate((np.expand_dims(np_bimages[i],0), np_fakes))
 
     # save images
     save_images(vis_samples, save=not sample_folder == '', save_path=os.path.join(
         sample_folder, png_file), dim_ordering='th')
 
-    # # save images individualy
-    # for i in range(batch_size):
-    #     np_image  = np.expand_dims(np_images[i], 0)
-    #     np_bimage = np.expand_dims(np_bimages[i], 0)
-    #     np_seg    = np.expand_dims(np_segs[i], 0)
-    #     np_fake   = np.expand_dims(np_fakes[i], 0)
-    #     sample = [np_image, np_bimage, np_seg, np_fake]
-    #     save_images(sample, save=not sample_folder == '', save_path=os.path.join(
-    #         sample_folder, '%d.png' % i), dim_ordering='th')
-
     # save captions
-    with open(os.path.join(sample_folder, txt_file), 'w') as f:
-        for cap in captions:
-            f.write(cap + '\n')
+    # with open(os.path.join(sample_folder, txt_file), 'w') as f:
+        # for cap in captions:
+            # f.write(cap + '\n')
 
     print('Images and captions saved at %s' % sample_folder)

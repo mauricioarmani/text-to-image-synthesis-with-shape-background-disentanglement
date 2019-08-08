@@ -26,7 +26,7 @@ def _FSpecialGauss(size, sigma):
     return g / g.sum()
 
 
-def _SSIMForMultiScale(img1, img2, max_val=64, filter_size=11,
+def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=11,
                        filter_sigma=1.5, k1=0.01, k2=0.03):
     """Return the Structural Similarity Map between `img1` and `img2`.
   
@@ -103,7 +103,7 @@ def _SSIMForMultiScale(img1, img2, max_val=64, filter_size=11,
     return ssim, cs
 
 
-def MultiScaleSSIM(img1, img2, max_val=64, filter_size=11, filter_sigma=1.5,
+def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5,
                    k1=0.01, k2=0.03, weights=None):
     """Return the MS-SSIM score between `img1` and `img2`.
   
@@ -189,20 +189,21 @@ def load_data_from_h5(h5file, target_resolution=64):
 
         tot += data.shape[0]
     
-    for k, v in sorted(images.items()):
-        print ('Found label {} with {} images'.format(k, len(v)))
+    # for k, v in sorted(images.items()):
+    #     print ('Found label {} with {} images'.format(k, len(v)))
 
     return images
 
 
 def evalute(data, sample):
-    
+
     labels = data.keys()
     
     res = {}
     for lab in labels:
         ldata = data[lab]
         n = len(ldata)
+        # np.random.seed(0)
         test_sample = np.random.permutation(n)[:sample]
         score = []
         for i in test_sample[:-1]:
@@ -220,11 +221,13 @@ def evalute(data, sample):
 
 if __name__ == "__main__":
 
+    import time
+    t1 = time.time()
     parser = argparse.ArgumentParser(description = 'Gans')    
     parser.add_argument('--h5_file', type=str, default='')
     parser.add_argument('--image_folder', type=str, default='')
     parser.add_argument('--evaluate_overall_score', action="store_true")
-    parser.add_argument('--sample_per_cls', type=int, default=20)
+    parser.add_argument('--sample_per_cls', type=int, default=100)
     args = parser.parse_args()
 
     
@@ -249,3 +252,4 @@ if __name__ == "__main__":
     }
 
     json.dump(Results, open('{}/{}_msssmi_score.json'.format(args.image_folder, model_name),'w'), indent=True, sort_keys=True)
+    print(time.time() - t1)

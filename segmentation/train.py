@@ -50,8 +50,8 @@ class Dataset(data.Dataset):
 
     def __getitem__(self, index):
         img, seg = self.transform(self.images[index], self.segs[index])
-        tensor_img = torch.cuda.FloatTensor(img/255.)
-        tensor_seg = torch.cuda.FloatTensor(seg/255.)
+        tensor_img = torch.cuda.FloatTensor((img/255.)*2 - 1) # [-1,1]
+        tensor_seg = torch.cuda.FloatTensor(seg/255.) # [0,1]
         return tensor_img, tensor_seg
 
     def __len__(self):
